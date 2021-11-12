@@ -228,6 +228,9 @@ public class QoltingPlugin extends Plugin
 		qoltingShoutPanel = new QoltingShoutOverlay(this,client.getViewportWidth(),client.getViewportHeight());
 		qoltingNearbyPanel = new QoltingNearbyPanel(this);
 		qoltingSlotsLeftOverlay = new QoltingSlotsLeftOverlay(this);
+
+		updateConfig();
+
 	}
 
 	@Override
@@ -236,10 +239,6 @@ public class QoltingPlugin extends Plugin
 		removeAllPanels();
 	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-	}
 
 	//If it works, it works!
 	private void playSound(String path) {
@@ -368,8 +367,7 @@ public class QoltingPlugin extends Plugin
 		}
 	}
 
-	@Subscribe
-	public void onConfigChanged(ConfigChanged configChanged) {
+	public void updateConfig() {
 		qoltingAltarPanel.backgroundColor = config.altarBackground();
 		qoltingAltarPanel.foregroundColor = config.altarForeground();
 		qoltingAltarPanel.flashingColor = config.altarFlashing();
@@ -380,6 +378,11 @@ public class QoltingPlugin extends Plugin
 		qoltingAltarPanel.barHeight = config.altarSize();
 		qoltingSlotsLeftOverlay.fontSize = config.slotsLeftFontSize();
 		qoltingNearbyPanel.threshold = config.nearbyThreshold();
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged configChanged) {
+		updateConfig();
 	}
 
 	@Subscribe
