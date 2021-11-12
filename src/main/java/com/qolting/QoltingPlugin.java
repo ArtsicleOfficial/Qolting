@@ -109,7 +109,6 @@ public class QoltingPlugin extends Plugin
 			return;
 		}
 		overlayManager.add(qoltingNearbyPanel);
-		qoltingNearbyPanel.threshold = config.nearbyThreshold();
 		qoltingNearbyPanel.nearbyItems = nearbyItems;
 	}
 	private void updateSlotsLeft() {
@@ -119,7 +118,6 @@ public class QoltingPlugin extends Plugin
 		}
 		overlayManager.add(qoltingSlotsLeftOverlay);
 		qoltingSlotsLeftOverlay.slotsLeft = getSlotsLeft();
-		qoltingSlotsLeftOverlay.fontSize = config.slotsLeftFontSize();
 	}
 
 	public String getItemName(int id) {
@@ -379,6 +377,9 @@ public class QoltingPlugin extends Plugin
 		qoltingAltarPanel.foregroundOffColor = config.altarForegroundOff();
 		qoltingAltarPanel.threshold = config.altarThreshold();
 		qoltingRSNOverlay.fontSize = config.rsnFontSize();
+		qoltingAltarPanel.barHeight = config.altarSize();
+		qoltingSlotsLeftOverlay.fontSize = config.slotsLeftFontSize();
+		qoltingNearbyPanel.threshold = config.nearbyThreshold();
 	}
 
 	@Subscribe

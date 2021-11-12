@@ -126,6 +126,17 @@ public interface QoltingConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "altarSize",
+			name = "Size",
+			description = "The size for the altar bar",
+			section = altar,
+			position = 2
+	)
+	default int altarSize() {
+		return 25;
+	}
+
+	@ConfigItem(
 			keyName="altarBackground",
 			name="Background",
 			description = "The background for the altar bar",

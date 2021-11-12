@@ -23,7 +23,7 @@ public class QoltingAltarOverlay extends Overlay {
 
     public int gameWidth = 100;
 
-    private int barHeight = 25;
+    public int barHeight = 25;
 
     private final QoltingPlugin plugin;
 
