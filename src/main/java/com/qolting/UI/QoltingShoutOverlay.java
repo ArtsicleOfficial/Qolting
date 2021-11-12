@@ -65,7 +65,7 @@ public class QoltingShoutOverlay extends Overlay {
         }
 
         if(thingsToBeFussedAbout[QoltingShoutOverlay.GO_BANK]) {
-            graphics.setColor(Color.DARK_GRAY);
+            graphics.setColor(Color.BLACK);
             graphics.drawString("Go bank",x + w/2 - metrics.stringWidth("Go bank")/2,y + metrics.getAscent() + 5);
         }
         if(thingsToBeFussedAbout[QoltingShoutOverlay.TOO_AFK]) {
