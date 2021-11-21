@@ -26,7 +26,7 @@ import java.util.ArrayList;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Qolting"
+		name = "Qolting"
 )
 public class QoltingPlugin extends Plugin
 {
@@ -49,6 +49,29 @@ public class QoltingPlugin extends Plugin
 	private QoltingSlotsLeftOverlay qoltingSlotsLeftOverlay = null;
 
 	private Item[] lastPlayerInventory = null;
+
+	private static final long CLIP_MTIME_UNLOADED = -2;
+	private static final long CLIP_MTIME_BUILTIN = -1;
+
+
+	public final File[] files = {
+			new File(RuneLite.RUNELITE_DIR, "yoink.wav"),
+			new File(RuneLite.RUNELITE_DIR, "blushard.wav"),
+			new File(RuneLite.RUNELITE_DIR, "onitsbolttips.wav")
+	};
+	public final Clip[] clips = {
+			null,
+			null,
+			null
+	};
+	private long[] lastClipMTime = {
+			CLIP_MTIME_UNLOADED,
+			CLIP_MTIME_UNLOADED,
+			CLIP_MTIME_UNLOADED
+	};
+	private final byte YOINK = 0;
+	private final byte SHARD = 1;
+	private final byte ONYX = 2;
 
 	int takingItem = 0;
 	int ownLootTimer = 0;
@@ -239,21 +262,59 @@ public class QoltingPlugin extends Plugin
 		removeAllPanels();
 	}
 
+	private synchronized void playCustomSound(byte index)
+	{
+		File file = files[index];
+		long currentMTime = file.exists() ? file.lastModified() : CLIP_MTIME_BUILTIN;
+		if (clips[index] == null || currentMTime != lastClipMTime[index] || !clips[index].isOpen())
+		{
+			if (clips[index] != null)
+			{
+				clips[index].close();
+			}
 
-	//If it works, it works!
-	private void playSound(String path) {
-		try {
-			AudioInputStream soundFile;
-			Clip clip = AudioSystem.getClip();
+			try
+			{
+				clips[index] = AudioSystem.getClip();
+			}
+			catch (LineUnavailableException e)
+			{
+				lastClipMTime[index] = CLIP_MTIME_UNLOADED;
+				log.warn("Unable to play notification", e);
+				return;
+			}
 
-			soundFile = AudioSystem.getAudioInputStream(new File(RuneLite.RUNELITE_DIR, path));
+			lastClipMTime[index] = currentMTime;
 
-			clip.open(soundFile);
-			clip.loop(0);
-		} catch (UnsupportedAudioFileException | LineUnavailableException | IOException ex) {
-			ex.printStackTrace();
+			if (!tryLoadNotification(index))
+			{
+				return;
+			}
+		}
+		// Using loop instead of start + setFramePosition prevents a the clip
+		// from not being played sometimes, presumably a race condition in the
+		// underlying line driver
+		clips[index].loop(1);
+	}
+
+	private boolean tryLoadNotification(byte index)
+	{
+		File file = files[index];
+		if (file.exists())
+		{
+			try (InputStream fileStream = new BufferedInputStream(new FileInputStream(file));
+				 AudioInputStream sound = AudioSystem.getAudioInputStream(fileStream))
+			{
+				clips[index].open(sound);
+				return true;
+			}
+			catch (UnsupportedAudioFileException | IOException | LineUnavailableException e)
+			{
+				log.warn("Unable to load notification sound", e);
+			}
 		}
 
+		return false;
 	}
 
 	@Subscribe
@@ -323,7 +384,7 @@ public class QoltingPlugin extends Plugin
 		if(item.getId() == ItemID.BLOOD_SHARD) {
 			playShardSoundNextTick = true;
 		} else if(item.getId() == ItemID.ONYX_BOLT_TIPS && config.customOnItsBoltTips()) {
-			playSound("onitsbolttips.wav");
+			playCustomSound(ONYX);
 		}
 
 		boolean existing = false;
@@ -393,9 +454,9 @@ public class QoltingPlugin extends Plugin
 		}
 		if(playShardSoundNextTick) {
 			if(ownLootTimer == 0 && config.customYoink()) {
-				playSound("yoink.wav");
+				playCustomSound(YOINK);
 			} else if(config.customBlushard()) {
-				playSound("blushard.wav");
+				playCustomSound(SHARD);
 			}
 			playShardSoundNextTick = false;
 		}

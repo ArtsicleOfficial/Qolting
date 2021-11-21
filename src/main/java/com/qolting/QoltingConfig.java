@@ -143,7 +143,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarBackground() {
-		return Color.BLACK;
+		return new Color(0,0,0,0);
 	}
 
 	@ConfigItem(
@@ -153,7 +153,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarForeground() {
-		return new Color(203, 247, 244);
+		return new Color(38,63,62,0);
 	}
 
 	@ConfigItem(
@@ -163,7 +163,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarForegroundOff() {
-		return new Color(103, 147, 144);
+		return new Color(0, 5, 10,0);
 	}
 
 
@@ -174,7 +174,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarForegroundLow() {
-		return new Color(203, 47, 44);
+		return new Color(83,55,29,0);
 	}
 
 	@ConfigItem(
@@ -184,7 +184,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarFlashing() {
-		return new Color(63, 71, 7);
+		return new Color(192, 157,69,0);
 	}
 
 
