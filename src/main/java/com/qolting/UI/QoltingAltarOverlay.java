@@ -19,11 +19,16 @@ public class QoltingAltarOverlay extends Overlay {
     public Color foregroundLowColor;
     public Color foregroundOffColor;
 
+    public boolean displayPrayer;
+    public boolean displayOutline;
+
     private int counter = 0;
 
     public int gameWidth = 100;
 
     public int barHeight = 25;
+
+    public int flashInterval = 10;
 
     private final QoltingPlugin plugin;
 
@@ -44,16 +49,16 @@ public class QoltingAltarOverlay extends Overlay {
         setDragTargetable(false);
         setBounds(new Rectangle(0,0,gameWidth,barHeight));
         setPriority(OverlayPriority.HIGH);
-        setLayer(OverlayLayer.ABOVE_WIDGETS);
+        setLayer(OverlayLayer.UNDER_WIDGETS);
     }
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        int rightSideDisplayWidth = 50;
+        int rightSideDisplayWidth = displayPrayer ? 50 : 0;
         counter++;
 
         graphics.setColor(backgroundColor);
-        if(prayer <= threshold && counter % 20 <= 10) {
+        if(prayer <= threshold && counter % flashInterval <= flashInterval/2) {
             graphics.setColor(flashingColor);
         }
         graphics.fillRect(0,0,gameWidth,barHeight);
@@ -65,18 +70,22 @@ public class QoltingAltarOverlay extends Overlay {
         } else if(prayer <= threshold) {
             graphics.setColor(foregroundLowColor);
         }
-        graphics.fillRect(0,0,(gameWidth - rightSideDisplayWidth-1) * prayer / maxPrayer ,barHeight);
+        graphics.fillRect(0,0,(gameWidth - rightSideDisplayWidth) * prayer / maxPrayer ,barHeight);
 
-        graphics.setColor(foregroundColor);
-        graphics.fillRect(gameWidth-rightSideDisplayWidth,0,rightSideDisplayWidth,barHeight);
+        if(displayPrayer) {
+            graphics.setColor(foregroundColor);
+            graphics.fillRect(gameWidth - rightSideDisplayWidth + 1, 0, rightSideDisplayWidth - 1, barHeight);
 
-        String letsWrite = prayer + "/" + maxPrayer;
-        FontMetrics metrics = graphics.getFontMetrics();
-        graphics.setColor(backgroundColor);
-        graphics.drawString(letsWrite,gameWidth-(rightSideDisplayWidth/2) - metrics.stringWidth(letsWrite)/2,barHeight/2 + metrics.getAscent()/2);
+            String letsWrite = prayer + "/" + maxPrayer;
+            FontMetrics metrics = graphics.getFontMetrics();
+            graphics.setColor(new Color(backgroundColor.getRGB())); //get rid of alpha
+            graphics.drawString(letsWrite, gameWidth - (rightSideDisplayWidth / 2) - metrics.stringWidth(letsWrite) / 2, barHeight / 2 + metrics.getAscent() / 2);
+        }
 
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(0,barHeight-2,gameWidth,2);
+        if(displayOutline) {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, barHeight - 2, gameWidth, 2);
+        }
 
 
         return new Dimension(gameWidth,barHeight);

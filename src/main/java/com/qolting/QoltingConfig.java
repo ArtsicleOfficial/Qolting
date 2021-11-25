@@ -43,6 +43,13 @@ public interface QoltingConfig extends Config
 	)
 	String nearbyDrops = "nearbyDrops";
 
+	@ConfigSection(
+				name = "Tracker",
+				description = "Tracks all accounts using the plugin at once",
+				position = 4
+	)
+	String tracker = "tracker";
+
 	@ConfigItem(
 			keyName = "rsnDisplay",
 			name = "RSN Display",
@@ -65,6 +72,14 @@ public interface QoltingConfig extends Config
 	default int rsnFontSize() {
 		return 50;
 	}
+
+	@ConfigItem(
+			keyName = "flashInterval",
+			name = "Flashing Interval",
+			description = "How many frames it should be before a blood shard flasher or altar prayer bar flasher flashes. (Higher = less flashy, avoid seizures.) At 50 FPS, if a flashing interval of 50 will result in one cycle of flashing per second.",
+			section = general
+	)
+	default int flashyInterval() { return 20; }
 
 	@ConfigItem(
 			keyName = "slotsLeft",
@@ -137,6 +152,29 @@ public interface QoltingConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "altarOutline",
+			name = "Outline",
+			description = "Whether or not to display the white outline",
+			section = altar,
+			position = 3
+	)
+	default boolean altarOutline() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "altarPrayer",
+			name = "Display Prayer",
+			description = "Whether or not to display prayer",
+			section = altar,
+			position = 4
+	)
+	default boolean altarPrayer() {
+		return true;
+	}
+
+	@Alpha
+	@ConfigItem(
 			keyName="altarBackground",
 			name="Background",
 			description = "The background for the altar bar",
@@ -146,6 +184,7 @@ public interface QoltingConfig extends Config
 		return new Color(0,0,0,0);
 	}
 
+	@Alpha
 	@ConfigItem(
 			keyName="altarForeground",
 			name="Foreground",
@@ -156,6 +195,7 @@ public interface QoltingConfig extends Config
 		return new Color(38,63,62,0);
 	}
 
+	@Alpha
 	@ConfigItem(
 			keyName="altarForegroundOff",
 			name="Foreground Off",
@@ -167,6 +207,7 @@ public interface QoltingConfig extends Config
 	}
 
 
+	@Alpha
 	@ConfigItem(
 			keyName="altarForegroundLow",
 			name="Foreground Low",
@@ -177,6 +218,7 @@ public interface QoltingConfig extends Config
 		return new Color(83,55,29,0);
 	}
 
+	@Alpha
 	@ConfigItem(
 			keyName = "altarFlashing",
 			name="Flashing",
@@ -239,6 +281,17 @@ public interface QoltingConfig extends Config
 		return 12000;
 	}
 
+	@Range(
+			min=0
+	)
+	@ConfigItem(
+			keyName = "nearbyRange",
+			name = "Range",
+			description = "The range, in tiles, to search for new nearby items in (maximum distance along an axis)",
+			section = nearbyDrops
+	)
+	default int nearbyRange() { return 100; }
+
 	@ConfigItem(
 			keyName = "customBlushard",
 			name = "Custom Blushard EarBlaster",
@@ -269,4 +322,32 @@ public interface QoltingConfig extends Config
 		return true;
 	}
 
+	@Range(
+			min = 1,
+			max = 100
+	)
+	@ConfigItem(
+			keyName = "numLoops",
+			name = "Play Blasters (#)",
+			description = "How many times to play an Ear Blaster",
+			section = earBlasters
+	)
+	default int loopBlasters() { return 1; }
+
+
+	@ConfigItem(
+			keyName = "useAccountTracker",
+			name = "Use Account Tracker",
+			description = "Whether or not to save info to the account tracker at %userprofile%/.runelite/qolting/",
+			section = tracker
+	)
+	default boolean useAccountTracker() { return true; }
+
+	@ConfigItem(
+			keyName = "launchAccountTracker",
+			name = "Launch Account Tracker",
+			description = "Opens the account tracker window with this client as its parent",
+			section = tracker
+	)
+	default boolean launchAccountTracker() { return false; }
 }

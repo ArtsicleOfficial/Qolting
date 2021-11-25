@@ -21,6 +21,8 @@ public class QoltingShoutOverlay extends Overlay {
 
     private int blinker = 0;
 
+    public int flashInterval = 10;
+
     public int viewportWidth;
     public int viewportHeight;
 
@@ -74,7 +76,7 @@ public class QoltingShoutOverlay extends Overlay {
         }
         /*graphics.setFont(new Font(graphics.getFont().getFontName(),Font.PLAIN,80));
         metrics = graphics.getFontMetrics();*/
-        if(thingsToBeFussedAbout[QoltingShoutOverlay.SHARD_NEARBY] && blinker % 10 > 3) {
+        if(thingsToBeFussedAbout[QoltingShoutOverlay.SHARD_NEARBY] && blinker % flashInterval > flashInterval/3) {
             int shardW = 150;
             //graphics.setColor(Color.RED);
             //graphics.drawString("SHARD!!@@@", x + w / 2 - metrics.stringWidth("SHARD!!@@@") / 2, y + h / 2 + metrics.getAscent() / 2);

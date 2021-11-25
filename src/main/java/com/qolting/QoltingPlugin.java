@@ -4,6 +4,9 @@ import com.google.inject.Provides;
 import javax.inject.Inject;
 import javax.sound.sampled.*;
 
+import com.qolting.AccountManager.QoltingAccountInfo;
+import com.qolting.AccountManager.QoltingAccountManager;
+import com.qolting.AccountManager.QoltingAccountManagerFrame;
 import com.qolting.UI.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -12,13 +15,16 @@ import net.runelite.api.kit.KitType;
 import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.NpcLootReceived;
+import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
+import org.apache.commons.lang3.ArrayUtils;
 
 
 import java.io.*;
@@ -26,7 +32,7 @@ import java.util.ArrayList;
 
 @Slf4j
 @PluginDescriptor(
-		name = "Qolting"
+		name = "Qolting dev"
 )
 public class QoltingPlugin extends Plugin
 {
@@ -38,6 +44,14 @@ public class QoltingPlugin extends Plugin
 	private OverlayManager overlayManager;
 	@Inject
 	private ItemManager itemManager;
+	@Inject
+	private ConfigManager configManager;
+
+	private QoltingAccountManager qoltingAccountManager;
+
+	private QoltingAccountManagerFrame currentManager = null;
+
+	private File qoltingDirectory = new File(RuneLite.RUNELITE_DIR,"qolting");
 
 	private ArrayList<GroundItem> nearbyItems = new ArrayList<>();
 
@@ -150,7 +164,6 @@ public class QoltingPlugin extends Plugin
 		return itemManager.getItemPrice(id);
 	}
 
-
 	public boolean inventoryFull() {
 		ItemContainer invent = client.getItemContainer(InventoryID.INVENTORY);
 		if(invent == null) {
@@ -245,6 +258,8 @@ public class QoltingPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		qoltingAccountManager = new QoltingAccountManager(qoltingDirectory);
+
 		qoltingAltarPanel = new QoltingAltarOverlay(this,0,0,config.altarThreshold(),config.altarBackground(),config.altarForeground(),config.altarForegroundLow(),config.altarForegroundOff(),config.altarFlashing());
 		qoltingRSNOverlay = new QoltingRSNOverlay(this);
 		qoltingProfitPanel = new QoltingProfitPanel(this);
@@ -294,7 +309,7 @@ public class QoltingPlugin extends Plugin
 		// Using loop instead of start + setFramePosition prevents a the clip
 		// from not being played sometimes, presumably a race condition in the
 		// underlying line driver
-		clips[index].loop(1);
+		clips[index].loop(Math.min(Math.max(0,config.loopBlasters()-1),100));
 	}
 
 	private boolean tryLoadNotification(byte index)
@@ -324,16 +339,33 @@ public class QoltingPlugin extends Plugin
 		}
 	}
 
+	private void clearNearbyItems() {
+		nearbyItems.clear();
+		qoltingNearbyPanel.nearbyItems.clear();
+	}
+
+	@Subscribe
+	public void onOverlayMenuClicked(OverlayMenuClicked event) {
+		if(event.getEntry().getMenuAction() == MenuAction.RUNELITE_OVERLAY &&
+				event.getEntry().getTarget().equals("List") &&
+				event.getEntry().getOption().equals("Clear")) {
+			clearNearbyItems();
+		}
+	}
+
+	private Item[] getInventoryList(ItemContainerChanged changed) {
+		return ArrayUtils.addAll(changed.getItemContainer().getItems(),client.getItemContainer(InventoryID.EQUIPMENT).getItems());
+	}
+
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged containerChanged) {
-
 		if(containerChanged.getContainerId() == InventoryID.INVENTORY.getId()) {
 			if(takingItem == 0) {
-				lastPlayerInventory = containerChanged.getItemContainer().getItems();
+				lastPlayerInventory = getInventoryList(containerChanged);
 				return;
 			}
 			if(lastPlayerInventory == null) {
-				lastPlayerInventory = containerChanged.getItemContainer().getItems();
+				lastPlayerInventory = getInventoryList(containerChanged);
 				return;
 			}
 			mainLoop: for(int count = 0; count < containerChanged.getItemContainer().getItems().length; count++) {
@@ -364,7 +396,7 @@ public class QoltingPlugin extends Plugin
 					qoltingProfitPanel.profit += itemManager.getItemPrice(i.getId()) * (newAmount-lastAmount);
 				}
 			}
-			lastPlayerInventory = containerChanged.getItemContainer().getItems();
+			lastPlayerInventory = getInventoryList(containerChanged);
 		}
 	}
 
@@ -385,6 +417,16 @@ public class QoltingPlugin extends Plugin
 			playShardSoundNextTick = true;
 		} else if(item.getId() == ItemID.ONYX_BOLT_TIPS && config.customOnItsBoltTips()) {
 			playCustomSound(ONYX);
+		}
+
+		if(client.getLocalPlayer() == null) {
+			return;
+		}
+
+		if(Math.abs(itemSpawned.getTile().getWorldLocation().getX() - client.getLocalPlayer().getWorldLocation().getX()) > config.nearbyRange() ||
+				Math.abs(itemSpawned.getTile().getWorldLocation().getY() - client.getLocalPlayer().getWorldLocation().getY()) > config.nearbyRange()) {
+			//item is outside of the range of the config
+			return;
 		}
 
 		boolean existing = false;
@@ -435,19 +477,51 @@ public class QoltingPlugin extends Plugin
 		qoltingAltarPanel.foregroundLowColor = config.altarForegroundLow();
 		qoltingAltarPanel.foregroundOffColor = config.altarForegroundOff();
 		qoltingAltarPanel.threshold = config.altarThreshold();
-		qoltingRSNOverlay.fontSize = config.rsnFontSize();
 		qoltingAltarPanel.barHeight = config.altarSize();
+		qoltingAltarPanel.displayOutline = config.altarOutline();
+		qoltingAltarPanel.displayPrayer = config.altarPrayer();
+		qoltingAltarPanel.flashInterval = config.flashyInterval();
+
+		qoltingRSNOverlay.fontSize = config.rsnFontSize();
 		qoltingSlotsLeftOverlay.fontSize = config.slotsLeftFontSize();
 		qoltingNearbyPanel.threshold = config.nearbyThreshold();
+
+		qoltingShoutPanel.flashInterval = config.flashyInterval();
 	}
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged configChanged) {
 		updateConfig();
+
+		if(configChanged.getKey().equals("launchAccountTracker")) {
+			if(currentManager != null) {
+				currentManager.close();
+			}
+			currentManager = new QoltingAccountManagerFrame(qoltingAccountManager);
+			currentManager.update(config.altarThreshold());
+		}
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged) {
+		int state = gameStateChanged.getGameState().getState();
+		if(state == GameState.HOPPING.getState() || state == GameState.LOGGING_IN.getState() || state == GameState.STARTING.getState()) {
+			clearNearbyItems();
+		}
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick gameTick) {
+		if(config.useAccountTracker()) {
+			ArrayList<LootItem> items = new ArrayList<>();
+			for(GroundItem item : nearbyItems) {
+				items.add(new LootItem(item,this));
+			}
+			qoltingAccountManager.saveAccountInfo(getRSN(),client.getBoostedSkillLevel(Skill.PRAYER),client.getBoostedSkillLevel(Skill.HITPOINTS),getSlotsLeft(),items,client.getLocalPlayer().getWorldLocation());
+		}
+		if(currentManager != null) {
+			currentManager.update(config.altarThreshold());
+		}
 		if(!isInDarkmeyer()) {
 			removeAllPanels();
 			return;
