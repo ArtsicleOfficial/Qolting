@@ -341,7 +341,7 @@ public interface QoltingConfig extends Config
 			description = "Whether or not to save info to the account tracker at %userprofile%/.runelite/qolting/",
 			section = tracker
 	)
-	default boolean useAccountTracker() { return true; }
+	default boolean useAccountTracker() { return false; }
 
 	@ConfigItem(
 			keyName = "launchAccountTracker",
