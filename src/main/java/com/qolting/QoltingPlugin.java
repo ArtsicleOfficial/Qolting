@@ -498,7 +498,7 @@ public class QoltingPlugin extends Plugin
 				currentManager.close();
 			}
 			currentManager = new QoltingAccountManagerFrame(qoltingAccountManager);
-			currentManager.update(config.altarThreshold());
+			currentManager.update(config.altarThreshold(),config.nearbyThreshold());
 		}
 	}
 
@@ -520,7 +520,7 @@ public class QoltingPlugin extends Plugin
 			qoltingAccountManager.saveAccountInfo(getRSN(),client.getBoostedSkillLevel(Skill.PRAYER),client.getBoostedSkillLevel(Skill.HITPOINTS),getSlotsLeft(),items,client.getLocalPlayer().getWorldLocation());
 		}
 		if(currentManager != null) {
-			currentManager.update(config.altarThreshold());
+			currentManager.update(config.altarThreshold(),config.nearbyThreshold());
 		}
 		if(!isInDarkmeyer()) {
 			removeAllPanels();

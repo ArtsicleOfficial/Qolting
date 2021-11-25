@@ -67,7 +67,7 @@ public class QoltingAccountManagerFrame {
         frame.setVisible(true);
     }
 
-    public void update(int prayerThreshold) {
+    public void update(int prayerThreshold, int nearbyThreshold) {
         if(!frame.isVisible()) {
             return;
         }
@@ -94,6 +94,9 @@ public class QoltingAccountManagerFrame {
             if(info.items.size() > 0) {
                 for(LootItem item : info.items) {
                     int value = item.value * item.quantity;
+                    if(value < nearbyThreshold) {
+                        continue;
+                    }
                     lootNearbyT += getSpan((value/1000) + "k: " + item.name.substring(0,1).toUpperCase() + item.name.substring(1).toLowerCase() + " * " + item.quantity + " (" + info.username + ")",interpolateColors(Color.LIGHT_GRAY,Color.GREEN,Math.max(0,Math.min(1,value/40000.0f))));
                 }
             }
