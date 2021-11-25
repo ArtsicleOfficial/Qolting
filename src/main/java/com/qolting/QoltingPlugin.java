@@ -32,7 +32,7 @@ import java.util.ArrayList;
 
 @Slf4j
 @PluginDescriptor(
-		name = "Qolting dev"
+		name = "Qolting"
 )
 public class QoltingPlugin extends Plugin
 {
