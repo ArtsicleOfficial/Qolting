@@ -337,7 +337,7 @@ public class QoltingPlugin extends Plugin
 	}
 
 	public boolean ignoreItem(int id) {
-		String name = getItemName(id);;
+		String name = getItemName(id);
 		return ignoreItem(name);
 	}
 
@@ -561,9 +561,9 @@ public class QoltingPlugin extends Plugin
 		// ^ For now, i'll disable the stacking of existing item stacks because I think the functionality
 		// of this will behave better. For example, the blackout manager will now highlight separate blood rune
 		// stacks instead just one that won't even disappear once picked up.
-		if(!existing) {
-			nearbyItems.add(new GroundItem(item.getId(),item.getQuantity(),itemSpawned.getTile()));
-		}
+		//if(!existing) {
+		nearbyItems.add(new GroundItem(item.getId(),item.getQuantity(),itemSpawned.getTile()));
+		//}
 	}
 
 	@Subscribe
@@ -577,6 +577,13 @@ public class QoltingPlugin extends Plugin
 			}
 		}
 
+	}
+
+	@Subscribe
+	public void onBeforeRender(BeforeRender render) {
+		if(config.blackoutFPS()) {
+			updateBlackout();
+		}
 	}
 
 	@Subscribe

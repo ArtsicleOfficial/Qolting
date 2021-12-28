@@ -77,6 +77,16 @@ public interface QoltingConfig extends Config
 		return false;
 	}
 
+	@ConfigItem(
+			keyName = "blackoutFPS",
+			name = "Lock to FPS",
+			description = "Unsure whether this can lower FPS across many many clients",
+			section = blackout
+	)
+	default boolean blackoutFPS() {
+		return true;
+	}
+
 	@Alpha
 	@ConfigItem(
 			keyName = "blackoutColor",
