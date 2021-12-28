@@ -1,9 +1,6 @@
 package com.qolting.Blackout;
 
-import org.w3c.dom.css.Rect;
-
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 
 public class BlackoutQuad {
 
