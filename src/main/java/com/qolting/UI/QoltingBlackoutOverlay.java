@@ -1,7 +1,6 @@
 package com.qolting.UI;
 
 import com.qolting.Blackout.BlackoutQuad;
-import com.qolting.Blackout.BlackoutShapes;
 import com.qolting.Blackout.BlackoutVector;
 import com.qolting.QoltingPlugin;
 import net.runelite.client.ui.overlay.Overlay;
@@ -11,7 +10,6 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 
 import java.awt.*;
 import java.awt.geom.Area;
-import java.awt.geom.QuadCurve2D;
 import java.util.ArrayList;
 
 public class QoltingBlackoutOverlay extends Overlay {
