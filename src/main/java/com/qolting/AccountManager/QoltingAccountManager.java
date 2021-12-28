@@ -16,11 +16,6 @@ public class QoltingAccountManager {
 
     private final File directory;
 
-    public Thread thread = null;
-    public QoltingAccountManagerFrame frame = null;
-
-    private boolean runningAccountManager = false;
-
     private final int tooOldAge = 5000;
 
     public QoltingAccountManager(File qoltingDirectory) {

@@ -7,9 +7,13 @@ import javax.sound.sampled.*;
 import com.qolting.AccountManager.QoltingAccountInfo;
 import com.qolting.AccountManager.QoltingAccountManager;
 import com.qolting.AccountManager.QoltingAccountManagerFrame;
+import com.qolting.Blackout.BlackoutQuad;
+import com.qolting.Blackout.BlackoutVector;
 import com.qolting.UI.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.events.*;
 import net.runelite.api.kit.KitType;
 import net.runelite.client.RuneLite;
@@ -27,12 +31,13 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import org.apache.commons.lang3.ArrayUtils;
 
 
+import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 
 @Slf4j
 @PluginDescriptor(
-		name = "Qolting dev"
+		name = "Qolting"
 )
 public class QoltingPlugin extends Plugin
 {
@@ -61,19 +66,28 @@ public class QoltingPlugin extends Plugin
 	private QoltingShoutOverlay qoltingShoutPanel = null;
 	private QoltingNearbyPanel qoltingNearbyPanel = null;
 	private QoltingSlotsLeftOverlay qoltingSlotsLeftOverlay = null;
+	private QoltingBlackoutOverlay qoltingBlackoutOverlay = null;
 
 	private Item[] lastPlayerInventory = null;
 
 	private static final long CLIP_MTIME_UNLOADED = -2;
 	private static final long CLIP_MTIME_BUILTIN = -1;
 
+	public static final String LOCK_FILE = "qoltingDisableBLACKOUT.txt";
+
 
 	public final File[] files = {
-			new File(RuneLite.RUNELITE_DIR, "yoink.wav"),
-			new File(RuneLite.RUNELITE_DIR, "blushard.wav"),
-			new File(RuneLite.RUNELITE_DIR, "onitsbolttips.wav")
+			new File(RuneLite.RUNELITE_DIR, "qolting\\yoink.wav"),
+			new File(RuneLite.RUNELITE_DIR, "qolting\\shard.wav"),
+			new File(RuneLite.RUNELITE_DIR, "qolting\\onyx.wav"),
+			new File(RuneLite.RUNELITE_DIR, "qolting\\prayer.wav"),
+			new File(RuneLite.RUNELITE_DIR, "qolting\\health.wav"),
+			new File(RuneLite.RUNELITE_DIR, "qolting\\regularDrop.wav")
 	};
 	public final Clip[] clips = {
+			null,
+			null,
+			null,
 			null,
 			null,
 			null
@@ -81,11 +95,17 @@ public class QoltingPlugin extends Plugin
 	private long[] lastClipMTime = {
 			CLIP_MTIME_UNLOADED,
 			CLIP_MTIME_UNLOADED,
+			CLIP_MTIME_UNLOADED,
+			CLIP_MTIME_UNLOADED,
+			CLIP_MTIME_UNLOADED,
 			CLIP_MTIME_UNLOADED
 	};
 	private final byte YOINK = 0;
 	private final byte SHARD = 1;
 	private final byte ONYX = 2;
+	private final byte PRAYER = 3;
+	private final byte HEALTH = 4;
+	private final byte REGULAR_DROP = 5;
 
 	int takingItem = 0;
 	int ownLootTimer = 0;
@@ -155,6 +175,67 @@ public class QoltingPlugin extends Plugin
 		}
 		overlayManager.add(qoltingSlotsLeftOverlay);
 		qoltingSlotsLeftOverlay.slotsLeft = getSlotsLeft();
+	}
+	private void updateBlackout() {
+		if(!config.blackoutOverlay() || new File(RuneLite.RUNELITE_DIR,LOCK_FILE).exists()) {
+			overlayManager.remove(qoltingBlackoutOverlay);
+			return;
+		}
+		overlayManager.add(qoltingBlackoutOverlay);
+
+		qoltingBlackoutOverlay.gameHeight = client.getViewportHeight();
+		qoltingBlackoutOverlay.gameWidth = client.getViewportWidth();
+
+		qoltingBlackoutOverlay.quads.clear();
+
+		Polygon altarDoor = Perspective.getCanvasTilePoly(client,LocalPoint.fromWorld(client,3605,3358));
+		Polygon bankDoor = Perspective.getCanvasTilePoly(client,LocalPoint.fromWorld(client,3605,3365));
+
+		//Is in bank or altar, remove overlay entirely
+		if( client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3365, 8, 5,0))
+				|| client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3353, 8, 6,0))
+		|| isPrayerOff()
+		|| tooAFK()) {
+			qoltingBlackoutOverlay.quads.add(new BlackoutQuad(0,0,client.getViewportWidth(),client.getViewportHeight()));
+			return;
+		}
+
+		//Otherwise, let's selectively remove the overlay on certain things:
+
+		for(GroundItem item : nearbyItems) {
+			if(item.quantity * itemManager.getItemPrice(item.id) < config.nearbyThreshold() || ignoreItem(item.id)) {
+				continue;
+			}
+			Polygon gon = Perspective.getCanvasTilePoly(client,item.tile.getLocalLocation());
+			qoltingBlackoutOverlay.addQuad(gon);
+		}
+		//Altar
+		if(client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold()
+				|| (config.blackoutGlobalDisplayAltar() && isAnyAccountLowPrayer())) {
+			Polygon altar = Perspective.getCanvasTileAreaPoly(client, LocalPoint.fromWorld(client,3605,3354),3,3,client.getPlane(),client.getLocalPlayer().getWorldArea().getHeight());
+			qoltingBlackoutOverlay.addQuad(altar);
+		}
+		//Altar door
+		if((client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold() || client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3353, 8, 6,0)) || (config.blackoutGlobalDisplayAltar() && isAnyAccountLowPrayer()))
+			&& isDoorClosed(3605,3358)) {
+			qoltingBlackoutOverlay.addQuad(altarDoor);
+		}
+		//Bank
+		if(getSlotsLeft() <= 2) {
+			Polygon bank = Perspective.getCanvasTilePoly(client,LocalPoint.fromWorld(client,3607,3368));
+			qoltingBlackoutOverlay.addQuad(bank);
+		}
+		//Bank door
+		if((getSlotsLeft() <= 2 || client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3365, 8, 5,0)))
+				&& isDoorClosed(3605,3365)) {
+			qoltingBlackoutOverlay.addQuad(bankDoor);
+		}
+
+	}
+
+	public boolean isDoorClosed(int worldX, int worldY) {
+		LocalPoint coords = LocalPoint.fromWorld(client,worldX,worldY);
+		return client.getScene().getTiles()[0][coords.getSceneX()][coords.getSceneY()].getWallObject() != null;
 	}
 
 	public String getItemName(int id) {
@@ -231,12 +312,42 @@ public class QoltingPlugin extends Plugin
 		}
 		return true;
 	}
+
+	public boolean isAnyAccountLowPrayer() {
+		//this account
+		if(client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold()) {
+			return true;
+		}
+		//any account
+		ArrayList<QoltingAccountInfo> info = qoltingAccountManager.getAllAccountInfo();
+		for(QoltingAccountInfo i : info) {
+			if(i.prayer <= config.altarThreshold()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private boolean isInDarkmeyer() {
 		Player localPlayer = client.getLocalPlayer();
 		if(localPlayer == null) {
 			return false;
 		}
 		return localPlayer.getWorldLocation().getRegionID() == 14388;
+	}
+
+	public boolean ignoreItem(int id) {
+		String name = getItemName(id);;
+		return ignoreItem(name);
+	}
+
+	public boolean ignoreItem(String name) {
+		for(String s : config.nearbyBlacklist().split(",")) {
+			if(s.equalsIgnoreCase(name)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public String getRSN() {
@@ -253,6 +364,7 @@ public class QoltingPlugin extends Plugin
 		overlayManager.remove(qoltingShoutPanel);
 		overlayManager.remove(qoltingNearbyPanel);
 		overlayManager.remove(qoltingSlotsLeftOverlay);
+		overlayManager.remove(qoltingBlackoutOverlay);
 	}
 
 	@Override
@@ -266,6 +378,7 @@ public class QoltingPlugin extends Plugin
 		qoltingShoutPanel = new QoltingShoutOverlay(this,client.getViewportWidth(),client.getViewportHeight());
 		qoltingNearbyPanel = new QoltingNearbyPanel(this);
 		qoltingSlotsLeftOverlay = new QoltingSlotsLeftOverlay(this);
+		qoltingBlackoutOverlay = new QoltingBlackoutOverlay(this,client.getViewportWidth(),client.getViewportHeight(),config.blackoutPadding(),config.blackoutColor());
 
 		updateConfig();
 
@@ -277,7 +390,7 @@ public class QoltingPlugin extends Plugin
 		removeAllPanels();
 	}
 
-	private synchronized void playCustomSound(byte index)
+	private synchronized void playCustomSound(byte index, boolean justOnce)
 	{
 		File file = files[index];
 		long currentMTime = file.exists() ? file.lastModified() : CLIP_MTIME_BUILTIN;
@@ -306,10 +419,11 @@ public class QoltingPlugin extends Plugin
 				return;
 			}
 		}
+		clips[index].setMicrosecondPosition(0);
 		// Using loop instead of start + setFramePosition prevents a the clip
 		// from not being played sometimes, presumably a race condition in the
 		// underlying line driver
-		clips[index].loop(Math.min(Math.max(0,config.loopBlasters()-1),100));
+		clips[index].loop(justOnce ? 0 : Math.min(Math.max(0,config.loopBlasters()-1),100));
 	}
 
 	private boolean tryLoadNotification(byte index)
@@ -350,6 +464,11 @@ public class QoltingPlugin extends Plugin
 				event.getEntry().getTarget().equals("List") &&
 				event.getEntry().getOption().equals("Clear")) {
 			clearNearbyItems();
+		}
+		if(event.getEntry().getMenuAction() == MenuAction.RUNELITE_OVERLAY &&
+				event.getEntry().getTarget().equals("Profit") &&
+				event.getEntry().getOption().equals("Clear")) {
+			qoltingProfitPanel.profit = 0;
 		}
 	}
 
@@ -413,12 +532,14 @@ public class QoltingPlugin extends Plugin
 	@Subscribe
 	public void onItemSpawned(ItemSpawned itemSpawned) {
 		TileItem item = itemSpawned.getItem();
-		if(item.getId() == ItemID.BLOOD_SHARD) {
+		if (item.getId() == ItemID.BLOOD_SHARD && config.customBlushard()) {
+			//For the yoink sounds, we'll play next tick to compare if it is the player's drop
 			playShardSoundNextTick = true;
-		} else if(item.getId() == ItemID.ONYX_BOLT_TIPS && config.customOnItsBoltTips()) {
-			playCustomSound(ONYX);
+		} else if (item.getId() == ItemID.ONYX_BOLT_TIPS && config.customOnItsBoltTips()) {
+			playCustomSound(ONYX,config.loopUntil());
+		} else if (config.customRegularDrops() && getItemPrice(item.getId()) * item.getQuantity() >= config.nearbyThreshold()) {
+			playCustomSound(REGULAR_DROP,false);
 		}
-
 		if(client.getLocalPlayer() == null) {
 			return;
 		}
@@ -430,15 +551,18 @@ public class QoltingPlugin extends Plugin
 		}
 
 		boolean existing = false;
-		for(GroundItem i : nearbyItems) {
+		/*for(GroundItem i : nearbyItems) {
 			if(i.id == item.getId()) {
 				i.quantity += item.getQuantity();
 				existing = true;
 				break;
 			}
-		}
+		}*/
+		// ^ For now, i'll disable the stacking of existing item stacks because I think the functionality
+		// of this will behave better. For example, the blackout manager will now highlight separate blood rune
+		// stacks instead just one that won't even disappear once picked up.
 		if(!existing) {
-			nearbyItems.add(new GroundItem(item.getId(),item.getQuantity()));
+			nearbyItems.add(new GroundItem(item.getId(),item.getQuantity(),itemSpawned.getTile()));
 		}
 	}
 
@@ -447,11 +571,8 @@ public class QoltingPlugin extends Plugin
 		TileItem item = itemDespawned.getItem();
 
 		for(GroundItem i : nearbyItems) {
-			if(i.id == item.getId()) {
-				i.quantity -= item.getQuantity();
-				if(i.quantity == 0) {
-					nearbyItems.remove(i);
-				}
+			if(i.id == item.getId() && i.quantity == itemDespawned.getItem().getQuantity()) {
+				nearbyItems.remove(i);
 				break;
 			}
 		}
@@ -463,7 +584,7 @@ public class QoltingPlugin extends Plugin
 		TileItem item = itemQuantityChanged.getItem();
 
 		for(GroundItem i : nearbyItems) {
-			if(i.id == item.getId()) {
+			if(i.id == item.getId() && itemQuantityChanged.getOldQuantity() == i.quantity) {
 				i.quantity = itemQuantityChanged.getNewQuantity();
 				break;
 			}
@@ -487,6 +608,13 @@ public class QoltingPlugin extends Plugin
 		qoltingNearbyPanel.threshold = config.nearbyThreshold();
 
 		qoltingShoutPanel.flashInterval = config.flashyInterval();
+
+		qoltingBlackoutOverlay.color = config.blackoutColor();
+		qoltingBlackoutOverlay.padding = config.blackoutPadding();
+
+		if(currentManager != null) {
+			currentManager.frame.setAlwaysOnTop(config.alwaysOnTopTracker());
+		}
 	}
 
 	@Subscribe
@@ -497,7 +625,7 @@ public class QoltingPlugin extends Plugin
 			if(currentManager != null) {
 				currentManager.close();
 			}
-			currentManager = new QoltingAccountManagerFrame(qoltingAccountManager);
+			currentManager = new QoltingAccountManagerFrame(qoltingAccountManager,config.alwaysOnTopTracker(),this);
 			currentManager.update(config.altarThreshold(),config.nearbyThreshold());
 		}
 	}
@@ -509,6 +637,24 @@ public class QoltingPlugin extends Plugin
 			clearNearbyItems();
 		}
 	}
+
+	int previousPrayer = 0;
+	int previousHealth = 0;
+
+	public void updateStatusNoise() {
+
+		if(config.customPrayer() && previousPrayer > config.altarThreshold() && client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold()) {
+			playCustomSound(PRAYER,false);
+		}
+		if(config.customLowHP() && previousHealth > 50 && client.getBoostedSkillLevel(Skill.HITPOINTS) <= 49) {
+			playCustomSound(HEALTH,false);
+		}
+
+
+		previousPrayer = client.getBoostedSkillLevel(Skill.PRAYER);
+		previousHealth = client.getBoostedSkillLevel(Skill.HITPOINTS);
+	}
+
 
 	@Subscribe
 	public void onGameTick(GameTick gameTick) {
@@ -526,20 +672,37 @@ public class QoltingPlugin extends Plugin
 			removeAllPanels();
 			return;
 		}
-		if(playShardSoundNextTick) {
-			if(ownLootTimer == 0 && config.customYoink()) {
-				playCustomSound(YOINK);
-			} else if(config.customBlushard()) {
-				playCustomSound(SHARD);
+		if(config.loopUntil()) {
+			for(GroundItem item : nearbyItems) {
+				if(item.id == ItemID.BLOOD_SHARD && (clips[SHARD] == null || !clips[SHARD].isRunning())) {
+					playCustomSound(SHARD,true);
+					break;
+				}
+				if(item.id == ItemID.ONYX_BOLT_TIPS && (clips[ONYX] == null || !clips[ONYX].isRunning())) {
+					playCustomSound(ONYX,true);
+					break;
+				}
 			}
-			playShardSoundNextTick = false;
+		} else {
+			if (playShardSoundNextTick) {
+				if (ownLootTimer == 0 && config.customYoink()) {
+					playCustomSound(YOINK,false);
+				} else if (config.customBlushard()) {
+					playCustomSound(SHARD,false);
+				}
+				playShardSoundNextTick = false;
+			}
 		}
+
+		updateStatusNoise();
+
 		updateAltar();
 		updateRSN();
 		updateProfit();
 		updateShout();
 		updateNearby();
 		updateSlotsLeft();
+		updateBlackout();
 
 		takingItem = Math.max(0,takingItem-1);
 		ownLootTimer = Math.max(0,ownLootTimer-1);

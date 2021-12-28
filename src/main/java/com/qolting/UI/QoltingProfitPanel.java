@@ -1,6 +1,8 @@
 package com.qolting.UI;
 
 import com.qolting.QoltingPlugin;
+import net.runelite.api.MenuAction;
+import net.runelite.client.ui.overlay.OverlayMenuEntry;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.TitleComponent;
@@ -17,6 +19,8 @@ public class QoltingProfitPanel extends OverlayPanel {
         super(plugin);
 
         setPosition(OverlayPosition.BOTTOM_LEFT);
+
+        getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, "Clear","Profit"));
     }
 
     private String intToReadableString(int amount) {

@@ -11,7 +11,7 @@ public interface QoltingConfig extends Config
 	@ConfigSection(
 				name = "General",
 				description = "Everything general",
-				position = 0
+				position = -1
 	)
 	String general = "general";
 
@@ -21,6 +21,13 @@ public interface QoltingConfig extends Config
 				position = 1
 	)
 	String altar = "altar";
+
+	@ConfigSection(
+			name = "Blackout",
+			description = "Related to the Blackout Overlay",
+			position = 0
+	)
+	String blackout = "blackout";
 
 	@ConfigSection(
 				name = "Screen Blasters",
@@ -58,6 +65,51 @@ public interface QoltingConfig extends Config
 	)
 	default boolean rsnDisplay() {
 		return true;
+	}
+
+	@ConfigItem(
+			keyName = "blackoutOverlay",
+			name = "Blackout Overlay",
+			description = "Whether or not to display the blackout overlay",
+			section = blackout
+	)
+	default boolean blackoutOverlay() {
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(
+			keyName = "blackoutColor",
+			name = "Blackout Color",
+			description = "Color and transparency of the blackout overlay",
+			section = blackout
+	)
+	default Color blackoutColor() {
+		return new Color(0,0,0,234);
+	}
+
+	@ConfigItem(
+			keyName = "blackoutGlobalDisplayAltar",
+			name = "Global Display Altar",
+			description = "When any account has low prayer, all accounts will show the altar (Requires 'Use Account Manager' on each client)",
+			section = blackout
+	)
+	default boolean blackoutGlobalDisplayAltar() {
+		return true;
+	}
+
+	@Range(
+			min = 0,
+			max = 100
+	)
+	@ConfigItem(
+			keyName = "blackoutPadding",
+			name = "Padding",
+			description = "Give me some space!",
+			section = blackout
+	)
+	default int blackoutPadding() {
+		return 5;
 	}
 
 	@Range(
@@ -273,12 +325,22 @@ public interface QoltingConfig extends Config
 
 	@ConfigItem(
 			keyName = "nearbyThreshold",
-			name = "Threshold",
-			description = "Threshold for nearby drops in traded value",
-			section = nearbyDrops
+			name = "Valuable Threshold",
+			description = "Threshold in traded value for nearby drops to be considered valuable",
+			section = general
 	)
 	default int nearbyThreshold() {
-		return 12000;
+		return 6000;
+	}
+
+	@ConfigItem(
+			keyName = "nearbyBlacklist",
+			name = "Valuable Blacklist",
+			description = "Items to ignore when their stack value is over the Nearby Threshold (comma separated list of item names, not case sensitive, don't put spaces between commas)",
+			section = general
+	)
+	default String nearbyBlacklist() {
+		return "rune dagger,vampyre dust";
 	}
 
 	@Range(
@@ -294,8 +356,8 @@ public interface QoltingConfig extends Config
 
 	@ConfigItem(
 			keyName = "customBlushard",
-			name = "Custom Blushard EarBlaster",
-			description = "Place file in '%userprofile%\\.runelite\\blushard.wav' on windows",
+			name = "Shard EarBlaster",
+			description = "Place file in '%userprofile%\\.runelite\\qolting\\shard.wav' on windows",
 			section = earBlasters
 	)
 	default boolean customBlushard() {
@@ -304,8 +366,8 @@ public interface QoltingConfig extends Config
 
 	@ConfigItem(
 			keyName = "customOnItsBoltTips",
-			name = "Custom OnIts Bolt Tip EarBlaster",
-			description = "Place file in '%userprofile%\\.runelite\\onitsbolttips.wav' on windows",
+			name = "Onyx EarBlaster",
+			description = "Place file in '%userprofile%\\.runelite\\qolting\\onyx.wav' on windows",
 			section = earBlasters
 	)
 	default boolean customOnItsBoltTips() {
@@ -314,11 +376,42 @@ public interface QoltingConfig extends Config
 
 	@ConfigItem(
 			keyName = "customYoink",
-			name = "Custom Yoink EarBlaster",
-			description = "Place file in '%userprofile%\\.runelite\\yoink.wav' on windows",
+			name = "Yoink EarBlaster",
+			description = "Place file in '%userprofile%\\.runelite\\qolting\\yoink.wav' on windows",
 			section = earBlasters
 	)
 	default boolean customYoink() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "customPrayer",
+			name = "Prayer EarBlaster",
+			description = "Place file in '%userprofile%\\.runelite\\qolting\\prayer.wav' on windows",
+			section = earBlasters
+	)
+	default boolean customPrayer() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "customLowHP",
+			name = "Low HP Blaster",
+			description = "Place file in '%userprofile%\\.runelite\\qolting\\health.wav' on windows",
+			section = earBlasters
+	)
+	default boolean customLowHP() {
+		return true;
+	}
+
+
+	@ConfigItem(
+			keyName = "customRegularDrops",
+			name = "Regular Drop EarBlaster",
+			description = "Place file in '%userprofile%\\.runelite\\qolting\\regularDrop.wav' on windows, only works for items over 'Valuable Threshold' threshold set in General!",
+			section = earBlasters
+	)
+	default boolean customRegularDrops() {
 		return true;
 	}
 
@@ -330,24 +423,43 @@ public interface QoltingConfig extends Config
 			keyName = "numLoops",
 			name = "Play Blasters (#)",
 			description = "How many times to play an Ear Blaster",
-			section = earBlasters
+			section = earBlasters,
+			position = -3
 	)
 	default int loopBlasters() { return 1; }
 
+	@ConfigItem(
+			keyName = "infLoop",
+			name = "Loop Shard/Onyx",
+			description = "Loop the ear blaster until a very valuable item has been picked up [overrides 'Play Blasters (#)']",
+			section = earBlasters,
+			position = -2
+	)
+	default boolean loopUntil() { return false; }
 
 	@ConfigItem(
 			keyName = "useAccountTracker",
 			name = "Use Account Tracker",
-			description = "Whether or not to save info to the account tracker at %userprofile%/.runelite/qolting/",
+			description = "Whether or not to save info to the account tracker at %userprofile%/.runelite/qolting/ (for many functionalities of the plugin this is recommended)",
 			section = tracker
 	)
-	default boolean useAccountTracker() { return false; }
+	default boolean useAccountTracker() { return true; }
 
 	@ConfigItem(
 			keyName = "launchAccountTracker",
 			name = "Launch Account Tracker",
 			description = "Opens the account tracker window with this client as its parent",
-			section = tracker
+			section = tracker,
+			position = -2
 	)
 	default boolean launchAccountTracker() { return false; }
+
+
+	@ConfigItem(
+			keyName = "alwaysOnTopTracker",
+			name = "Always On Top",
+			description = "Makes the account tracker always-on-top",
+			section = tracker
+	)
+	default boolean alwaysOnTopTracker() { return false; }
 }

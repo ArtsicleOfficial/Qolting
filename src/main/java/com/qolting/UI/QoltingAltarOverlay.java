@@ -49,7 +49,7 @@ public class QoltingAltarOverlay extends Overlay {
         setDragTargetable(false);
         setBounds(new Rectangle(0,0,gameWidth,barHeight));
         setPriority(OverlayPriority.HIGH);
-        setLayer(OverlayLayer.UNDER_WIDGETS);
+        setLayer(OverlayLayer.ALWAYS_ON_TOP);
     }
 
     @Override
