@@ -581,7 +581,7 @@ public class QoltingPlugin extends Plugin
 
 	@Subscribe
 	public void onBeforeRender(BeforeRender render) {
-		if(config.blackoutFPS()) {
+		if(config.blackoutFPS() && isInDarkmeyer()) {
 			updateBlackout();
 		}
 	}
