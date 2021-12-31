@@ -15,6 +15,8 @@ public class QoltingAccountInfo {
     public int backpackSpaces;
     public ArrayList<LootItem> items;
     public boolean atAltarOrBank;
+    public int GPhr;
+    public int profit;
 
     //variable has to do with the fromString function
     public final int itemsStartAt = 5;
@@ -24,12 +26,14 @@ public class QoltingAccountInfo {
                 new WorldArea(3601, 3365, 8, 5,0)
     };
 
-    public QoltingAccountInfo(String username, int health, int prayer, int backpackSpaces, ArrayList<LootItem> items, WorldPoint area) {
+    public QoltingAccountInfo(String username, int health, int prayer, int backpackSpaces, ArrayList<LootItem> items, WorldPoint area, int profit, int GPhr) {
         this.username = username;
         this.health = health;
         this.prayer = prayer;
         this.backpackSpaces = backpackSpaces;
         this.items = items;
+        this.profit = profit;
+        this.GPhr = GPhr;
 
         this.atAltarOrBank = (area.isInArea2D(altarOrBank[0]) || area.isInArea2D(altarOrBank[1]));
     }
@@ -51,7 +55,7 @@ public class QoltingAccountInfo {
             allToString += separator + i.toString();
             separator = ",";
         }
-        return username + "," + health + "," + prayer + "," + backpackSpaces + "," + atAltarOrBank + "," + allToString;
+        return username + "," + health + "," + prayer + "," + backpackSpaces + "," + atAltarOrBank + "," + profit + "," + GPhr + "," + allToString;
     }
     public void fromString(String string) {
         String[] split = string.split(",");
@@ -60,10 +64,12 @@ public class QoltingAccountInfo {
         this.prayer = Integer.parseInt(split[2]);
         this.backpackSpaces = Integer.parseInt(split[3]);
         this.atAltarOrBank = Boolean.parseBoolean(split[4]);
+        this.profit = Integer.parseInt(split[5]);
+        this.GPhr = Integer.parseInt(split[6]);
 
         items = new ArrayList<LootItem>();
 
-        for(int i = 5; i < split.length; i++) {
+        for(int i = 7; i < split.length; i++) {
             items.add(new LootItem(split[i]));
         }
     }

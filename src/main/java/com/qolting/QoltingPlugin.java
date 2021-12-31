@@ -75,6 +75,9 @@ public class QoltingPlugin extends Plugin
 
 	public static final String LOCK_FILE = "qoltingDisableBLACKOUT.txt";
 
+	//GP/hr tracking
+	public int GPhr = 0;
+
 
 	public final File[] files = {
 			new File(RuneLite.RUNELITE_DIR, "qolting\\yoink.wav"),
@@ -111,6 +114,8 @@ public class QoltingPlugin extends Plugin
 	int ownLootTimer = 0;
 	boolean playShardSoundNextTick = false;
 
+	float timeElapsed = 0;
+
 	private void updateAltar() {
 		if(!config.altarBar()) {
 			overlayManager.remove(qoltingAltarPanel);
@@ -130,6 +135,8 @@ public class QoltingPlugin extends Plugin
 		overlayManager.add(qoltingRSNOverlay);
 	}
 	private void updateProfit() {
+		timeElapsed += 0.6f;
+		GPhr = Math.round((qoltingProfitPanel.profit / timeElapsed) * 60 * 60)/1000;
 		if(!config.sessionTracker()) {
 			overlayManager.remove(qoltingProfitPanel);
 			return;
@@ -670,7 +677,7 @@ public class QoltingPlugin extends Plugin
 			for(GroundItem item : nearbyItems) {
 				items.add(new LootItem(item,this));
 			}
-			qoltingAccountManager.saveAccountInfo(getRSN(),client.getBoostedSkillLevel(Skill.PRAYER),client.getBoostedSkillLevel(Skill.HITPOINTS),getSlotsLeft(),items,client.getLocalPlayer().getWorldLocation());
+			qoltingAccountManager.saveAccountInfo(getRSN(),client.getBoostedSkillLevel(Skill.PRAYER),client.getBoostedSkillLevel(Skill.HITPOINTS),getSlotsLeft(),items,client.getLocalPlayer().getWorldLocation(),qoltingProfitPanel.profit,GPhr);
 		}
 		if(currentManager != null) {
 			currentManager.update(config.altarThreshold(),config.nearbyThreshold());

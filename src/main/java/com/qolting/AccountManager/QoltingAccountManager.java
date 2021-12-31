@@ -46,10 +46,10 @@ public class QoltingAccountManager {
     }
 
     //Returns false if unable to save to file
-    public boolean saveAccountInfo(String name, int prayer, int health, int backpackSpace, ArrayList<LootItem> groundItems, WorldPoint playerPosition) {
+    public boolean saveAccountInfo(String name, int prayer, int health, int backpackSpace, ArrayList<LootItem> groundItems, WorldPoint playerPosition, int profit, int GPhr) {
         verifyQoltingDirectory();
 
-        QoltingAccountInfo info = new QoltingAccountInfo(name,health,prayer,backpackSpace,groundItems, playerPosition);
+        QoltingAccountInfo info = new QoltingAccountInfo(name,health,prayer,backpackSpace,groundItems, playerPosition,profit, GPhr);
 
         File file = new File(directory,name + ".txt");
 

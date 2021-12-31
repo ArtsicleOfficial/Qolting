@@ -31,6 +31,10 @@ public class QoltingAccountManagerFrame {
     public JTextPane atAltarBank;
 
     public JButton toggleBlackout;
+    public JTextPane GPhr;
+    public JTextPane totalProfit;
+    public JPanel pageEnd;
+
     public QoltingPlugin plugin;
 
 
@@ -105,6 +109,22 @@ public class QoltingAccountManagerFrame {
         panel.add(lowBackpack);
         panel.add(atAltarBank);
 
+        GPhr = new JTextPane();
+        GPhr.setContentType("text/html");
+        GPhr.setEditable(false);
+
+        totalProfit = new JTextPane();
+        totalProfit.setContentType("text/html");
+        totalProfit.setEditable(false);
+
+
+        pageEnd = new JPanel(new GridLayout(1,2));
+        pageEnd.setBackground(new Color(5,5,5));
+        frame.add(pageEnd,BorderLayout.PAGE_END);
+
+        pageEnd.add(GPhr);
+        pageEnd.add(totalProfit);
+
         frame.add(toggleBlackout,BorderLayout.PAGE_START);
         frame.add(panel,BorderLayout.CENTER);
 
@@ -170,7 +190,11 @@ public class QoltingAccountManagerFrame {
         lowBackpackT += getSpan("Low Backpack: <br/>",Color.LIGHT_GRAY);
         lootNearbyT += getSpan("Loot Nearby: <br/>",Color.LIGHT_GRAY);
         atAltarBankT += getSpan("Stuck Altar/Bank: <br/>",Color.LIGHT_GRAY);
+        int totalGPhr = 0;
+        int totalledProfit = 0;
         for(QoltingAccountInfo info : data) {
+            totalGPhr += info.GPhr;
+            totalledProfit += info.profit;
             if(info.prayer <= prayerThreshold) {
                 lowPrayerT += getSpan(info.username + " (" + info.prayer + ")",Color.CYAN);
             }
@@ -193,6 +217,10 @@ public class QoltingAccountManagerFrame {
                 atAltarBankT += getSpan(info.username + "",new Color(100,0,0));
             }
         }
+        totalledProfit /= 1000;
+
+        GPhr.setText("<html>" + getSpan(totalGPhr + "k GP/hr (" + (totalGPhr/data.size()) + "k per account)",totalGPhr > 10000 ? new Color(192,220,192) : Color.lightGray));
+        totalProfit.setText("<html><style>body { text-align:right; } </style><body>" + getSpan("+" + totalledProfit + "k GP (" + (totalledProfit/data.size()) + "k per account)</body>",totalledProfit > 10000 ? new Color(192,220,192) : Color.lightGray));
 
 
 
