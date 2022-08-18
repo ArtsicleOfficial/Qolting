@@ -340,7 +340,7 @@ public class QoltingPlugin extends Plugin
 		if(localPlayer == null) {
 			return false;
 		}
-		return localPlayer.getWorldLocation().getRegionID() == 14388;
+		return localPlayer.getWorldLocation().getRegionID() == 14388 || localPlayer.getWorldLocation().getRegionID() == 14387;
 	}
 
 	public boolean ignoreItem(int id) {
