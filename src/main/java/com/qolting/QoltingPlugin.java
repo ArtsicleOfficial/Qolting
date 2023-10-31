@@ -718,7 +718,6 @@ public class QoltingPlugin extends Plugin
 			boolean overflow = ((gameCycle - i.addedAtGameCycle) < 0);
 			if(gameCycle - i.addedAtGameCycle >= GroundItem.GAME_CYCLES_BEFORE_REMOVAL || overflow) {
 				nearbyItems.remove(i);
-				break;
 			}
 		}
 
