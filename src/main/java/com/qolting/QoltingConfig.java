@@ -68,6 +68,14 @@ public interface QoltingConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "onlyInDarkmeyer",
+			name = "Only use Qolting in Darkmeyer",
+			description = "Some people wanted to use the plugin outside Darkmeyer. Here you go.",
+			section = general
+	)
+	default boolean onlyInDarkmeyer() { return true; }
+
+	@ConfigItem(
 			keyName = "blackoutOverlay",
 			name = "Blackout Overlay",
 			description = "Whether or not to display the blackout overlay",

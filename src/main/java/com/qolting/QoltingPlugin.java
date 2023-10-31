@@ -8,7 +8,6 @@ import com.qolting.AccountManager.QoltingAccountInfo;
 import com.qolting.AccountManager.QoltingAccountManager;
 import com.qolting.AccountManager.QoltingAccountManagerFrame;
 import com.qolting.Blackout.BlackoutQuad;
-import com.qolting.Blackout.BlackoutVector;
 import com.qolting.UI.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -19,7 +18,6 @@ import net.runelite.api.kit.KitType;
 import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.events.OverlayMenuClicked;
@@ -58,7 +56,8 @@ public class QoltingPlugin extends Plugin
 
 	private File qoltingDirectory = new File(RuneLite.RUNELITE_DIR,"qolting");
 
-	private ArrayList<GroundItem> nearbyItems = new ArrayList<>();
+	// NOTE: Accessed by QoltingNearbyPanel
+	public ArrayList<GroundItem> nearbyItems = new ArrayList<>();
 
 	private QoltingAltarOverlay qoltingAltarPanel = null;
 	private QoltingRSNOverlay qoltingRSNOverlay = null;
@@ -173,7 +172,6 @@ public class QoltingPlugin extends Plugin
 			return;
 		}
 		overlayManager.add(qoltingNearbyPanel);
-		qoltingNearbyPanel.nearbyItems = nearbyItems;
 	}
 	private void updateSlotsLeft() {
 		if(!config.slotsLeft()) {
@@ -213,8 +211,11 @@ public class QoltingPlugin extends Plugin
 			if(item.quantity * itemManager.getItemPrice(item.id) < config.nearbyThreshold() || ignoreItem(item.id)) {
 				continue;
 			}
-			Polygon gon = Perspective.getCanvasTilePoly(client,item.tile.getLocalLocation());
-			qoltingBlackoutOverlay.addQuad(gon);
+			LocalPoint location = LocalPoint.fromWorld(client, item.worldPoint);
+			if(location != null) {
+				Polygon gon = Perspective.getCanvasTilePoly(client, location);
+				qoltingBlackoutOverlay.addQuad(gon);
+			}
 		}
 		//Altar
 		if(client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold()
@@ -335,12 +336,20 @@ public class QoltingPlugin extends Plugin
 		return false;
 	}
 
-	private boolean isInDarkmeyer() {
+	private boolean isPlayerInGoodRegionToEnablePlugin() {
+		boolean result = false;
 		Player localPlayer = client.getLocalPlayer();
-		if(localPlayer == null) {
-			return false;
+		if(localPlayer != null) {
+			if(config.onlyInDarkmeyer())
+			{
+				result = localPlayer.getWorldLocation().getRegionID() == 14388 || localPlayer.getWorldLocation().getRegionID() == 14387;
+			}
+			else
+			{
+				result = true;
+			}
 		}
-		return localPlayer.getWorldLocation().getRegionID() == 14388 || localPlayer.getWorldLocation().getRegionID() == 14387;
+		return result;
 	}
 
 	public boolean ignoreItem(int id) {
@@ -460,17 +469,12 @@ public class QoltingPlugin extends Plugin
 		}
 	}
 
-	private void clearNearbyItems() {
-		nearbyItems.clear();
-		qoltingNearbyPanel.nearbyItems.clear();
-	}
-
 	@Subscribe
 	public void onOverlayMenuClicked(OverlayMenuClicked event) {
 		if(event.getEntry().getMenuAction() == MenuAction.RUNELITE_OVERLAY &&
 				event.getEntry().getTarget().equals("List") &&
 				event.getEntry().getOption().equals("Clear")) {
-			clearNearbyItems();
+			nearbyItems.clear();
 		}
 		if(event.getEntry().getMenuAction() == MenuAction.RUNELITE_OVERLAY &&
 				event.getEntry().getTarget().equals("Profit") &&
@@ -569,7 +573,7 @@ public class QoltingPlugin extends Plugin
 		// of this will behave better. For example, the blackout manager will now highlight separate blood rune
 		// stacks instead just one that won't even disappear once picked up.
 		//if(!existing) {
-		nearbyItems.add(new GroundItem(item.getId(),item.getQuantity(),itemSpawned.getTile()));
+		nearbyItems.add(new GroundItem(item.getId(),item.getQuantity(),itemSpawned.getTile().getWorldLocation(), client.getGameCycle()));
 		//}
 	}
 
@@ -588,7 +592,7 @@ public class QoltingPlugin extends Plugin
 
 	@Subscribe
 	public void onBeforeRender(BeforeRender render) {
-		if(config.blackoutFPS() && isInDarkmeyer()) {
+		if(config.blackoutFPS() && isPlayerInGoodRegionToEnablePlugin()) {
 			updateBlackout();
 		}
 	}
@@ -648,7 +652,7 @@ public class QoltingPlugin extends Plugin
 	public void onGameStateChanged(GameStateChanged gameStateChanged) {
 		int state = gameStateChanged.getGameState().getState();
 		if(state == GameState.HOPPING.getState() || state == GameState.LOGGING_IN.getState() || state == GameState.STARTING.getState()) {
-			clearNearbyItems();
+			nearbyItems.clear();
 		}
 	}
 
@@ -682,7 +686,7 @@ public class QoltingPlugin extends Plugin
 		if(currentManager != null) {
 			currentManager.update(config.altarThreshold(),config.nearbyThreshold());
 		}
-		if(!isInDarkmeyer()) {
+		if(!isPlayerInGoodRegionToEnablePlugin()) {
 			removeAllPanels();
 			return;
 		}
@@ -705,6 +709,16 @@ public class QoltingPlugin extends Plugin
 					playCustomSound(SHARD,false);
 				}
 				playShardSoundNextTick = false;
+			}
+		}
+
+		// NOTE: 5-minute expiration timer on nearby items.
+		for(GroundItem i : nearbyItems) {
+			int gameCycle = client.getGameCycle();
+			boolean overflow = ((gameCycle - i.addedAtGameCycle) < 0);
+			if(gameCycle - i.addedAtGameCycle >= GroundItem.GAME_CYCLES_BEFORE_REMOVAL || overflow) {
+				nearbyItems.remove(i);
+				break;
 			}
 		}
 

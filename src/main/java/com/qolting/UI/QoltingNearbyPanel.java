@@ -11,11 +11,9 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
 
 import java.awt.*;
-import java.util.ArrayList;
 
 public class QoltingNearbyPanel extends OverlayPanel {
 
-    public ArrayList<GroundItem> nearbyItems = new ArrayList<>();
     public int threshold = 0;
 
     private QoltingPlugin plugin;
@@ -31,7 +29,7 @@ public class QoltingNearbyPanel extends OverlayPanel {
 
     public Dimension render(Graphics2D graphics) {
 
-        for(GroundItem groundItem : nearbyItems) {
+        for(GroundItem groundItem : plugin.nearbyItems) {
             if(plugin.getItemPrice(groundItem.id) * groundItem.quantity < threshold || plugin.ignoreItem(groundItem.id)) {
                 continue;
             }
