@@ -125,6 +125,7 @@ public class QoltingPlugin extends Plugin
 		qoltingAltarPanel.maxPrayer = client.getRealSkillLevel(Skill.PRAYER);
 		qoltingAltarPanel.prayer = client.getBoostedSkillLevel(Skill.PRAYER);
 		qoltingAltarPanel.gameWidth = client.getViewportWidth();
+		qoltingAltarPanel.gameHeight = client.getViewportHeight();
 	}
 	private void updateRSN() {
 		if(!config.rsnDisplay()) {
@@ -617,7 +618,8 @@ public class QoltingPlugin extends Plugin
 		qoltingAltarPanel.foregroundOffColor = config.altarForegroundOff();
 		qoltingAltarPanel.threshold = config.altarThreshold();
 		qoltingAltarPanel.barHeight = config.altarSize();
-		qoltingAltarPanel.displayOutline = config.altarOutline();
+		qoltingAltarPanel.barOnBottom = config.altarBarOnBottom();
+		qoltingAltarPanel.outlineColor = config.altarOutline();
 		qoltingAltarPanel.displayPrayer = config.altarPrayer();
 		qoltingAltarPanel.flashInterval = config.flashyInterval();
 

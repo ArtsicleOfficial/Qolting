@@ -196,6 +196,17 @@ public interface QoltingConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+			keyName = "altarBarOnBottom",
+			name = "Bar On Bottom",
+			description = "Whether or not to display the altar bar on the bottom",
+			section = altar,
+			position = 1
+	)
+	default boolean altarBarOnBottom() {
+		return false;
+	}
+
 	@Range(
 			max=99
 	)
@@ -204,7 +215,7 @@ public interface QoltingConfig extends Config
 			name = "Threshold",
 			description = "The threshold for the altar bar",
 			section = altar,
-			position = 1
+			position = 2
 	)
 	default int altarThreshold() {
 		return 5;
@@ -215,29 +226,19 @@ public interface QoltingConfig extends Config
 			name = "Size",
 			description = "The size for the altar bar",
 			section = altar,
-			position = 2
+			position = 3
 	)
 	default int altarSize() {
 		return 25;
 	}
 
-	@ConfigItem(
-			keyName = "altarOutline",
-			name = "Outline",
-			description = "Whether or not to display the white outline",
-			section = altar,
-			position = 3
-	)
-	default boolean altarOutline() {
-		return true;
-	}
 
 	@ConfigItem(
 			keyName = "altarPrayer",
 			name = "Display Prayer",
 			description = "Whether or not to display prayer",
 			section = altar,
-			position = 4
+			position = 5
 	)
 	default boolean altarPrayer() {
 		return true;
@@ -251,7 +252,18 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarBackground() {
-		return new Color(0,0,0,0);
+		return new Color(0,0,0,255);
+	}
+
+	@Alpha
+	@ConfigItem(
+			keyName="altarOutline",
+			name="Outline",
+			description = "The outline for the altar bar",
+			section = altar
+	)
+	default Color altarOutline() {
+		return new Color(255,255,255,0);
 	}
 
 	@Alpha
@@ -262,7 +274,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarForeground() {
-		return new Color(38,63,62,0);
+		return new Color(38,63,62,255);
 	}
 
 	@Alpha
@@ -273,7 +285,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarForegroundOff() {
-		return new Color(0, 5, 10,0);
+		return new Color(0, 5, 10,255);
 	}
 
 
@@ -285,7 +297,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarForegroundLow() {
-		return new Color(83,55,29,0);
+		return new Color(83,55,29,255);
 	}
 
 	@Alpha
@@ -296,7 +308,7 @@ public interface QoltingConfig extends Config
 			section = altar
 	)
 	default Color altarFlashing() {
-		return new Color(192, 157,69,0);
+		return new Color(192, 157,69,255);
 	}
 
 

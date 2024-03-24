@@ -18,13 +18,15 @@ public class QoltingAltarOverlay extends Overlay {
     public Color flashingColor;
     public Color foregroundLowColor;
     public Color foregroundOffColor;
+    public Color outlineColor;
 
     public boolean displayPrayer;
-    public boolean displayOutline;
+    public boolean barOnBottom = false;
 
     private int counter = 0;
 
     public int gameWidth = 100;
+    public int gameHeight = 100;
 
     public int barHeight = 25;
 
@@ -61,7 +63,9 @@ public class QoltingAltarOverlay extends Overlay {
         if(prayer <= threshold && counter % flashInterval <= flashInterval/2) {
             graphics.setColor(flashingColor);
         }
-        graphics.fillRect(0,0,gameWidth,barHeight);
+
+        if(barOnBottom) { graphics.fillRect(0,gameHeight-barHeight,gameWidth,barHeight); }
+        else { graphics.fillRect(0,0,gameWidth,barHeight); }
 
         graphics.setColor(foregroundColor);
 
@@ -70,21 +74,26 @@ public class QoltingAltarOverlay extends Overlay {
         } else if(prayer <= threshold) {
             graphics.setColor(foregroundLowColor);
         }
-        graphics.fillRect(0,0,(gameWidth - rightSideDisplayWidth) * prayer / maxPrayer ,barHeight);
+
+        if(barOnBottom) { graphics.fillRect(0,gameHeight-barHeight,(gameWidth - rightSideDisplayWidth) * prayer / maxPrayer ,barHeight); }
+        else { graphics.fillRect(0, 0, (gameWidth - rightSideDisplayWidth) * prayer / maxPrayer, barHeight); }
 
         if(displayPrayer) {
             graphics.setColor(foregroundColor);
-            graphics.fillRect(gameWidth - rightSideDisplayWidth + 1, 0, rightSideDisplayWidth - 1, barHeight);
+            if(barOnBottom) { graphics.fillRect(gameWidth - rightSideDisplayWidth + 1, gameHeight - barHeight, rightSideDisplayWidth - 1, barHeight); }
+            else { graphics.fillRect(gameWidth - rightSideDisplayWidth + 1, 0, rightSideDisplayWidth - 1, barHeight); }
 
             String letsWrite = prayer + "/" + maxPrayer;
             FontMetrics metrics = graphics.getFontMetrics();
             graphics.setColor(new Color(backgroundColor.getRGB())); //get rid of alpha
-            graphics.drawString(letsWrite, gameWidth - (rightSideDisplayWidth / 2) - metrics.stringWidth(letsWrite) / 2, barHeight / 2 + metrics.getAscent() / 2);
+            if(barOnBottom) { graphics.drawString(letsWrite, gameWidth - (rightSideDisplayWidth / 2) - metrics.stringWidth(letsWrite) / 2, gameHeight - barHeight + ((barHeight / 2) + (metrics.getAscent() / 2))); }
+            else { graphics.drawString(letsWrite, gameWidth - (rightSideDisplayWidth / 2) - metrics.stringWidth(letsWrite) / 2, (barHeight / 2) + (metrics.getAscent() / 2)); }
         }
 
-        if(displayOutline) {
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(0, barHeight - 2, gameWidth, 2);
+        if(outlineColor.getAlpha() > 0) {
+            graphics.setColor(outlineColor);
+            if(barOnBottom) { graphics.fillRect(0, gameHeight - barHeight - 2, gameWidth, 2); }
+            else { graphics.fillRect(0, barHeight - 2, gameWidth, 2); }
         }
 
 
