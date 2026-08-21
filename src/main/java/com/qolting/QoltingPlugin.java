@@ -79,12 +79,12 @@ public class QoltingPlugin extends Plugin
 
 
 	public final File[] files = {
-			new File(RuneLite.RUNELITE_DIR, "qolting\\yoink.wav"),
-			new File(RuneLite.RUNELITE_DIR, "qolting\\shard.wav"),
-			new File(RuneLite.RUNELITE_DIR, "qolting\\onyx.wav"),
-			new File(RuneLite.RUNELITE_DIR, "qolting\\prayer.wav"),
-			new File(RuneLite.RUNELITE_DIR, "qolting\\health.wav"),
-			new File(RuneLite.RUNELITE_DIR, "qolting\\regularDrop.wav")
+			new File(qoltingDirectory, "yoink.wav"),
+			new File(qoltingDirectory, "shard.wav"),
+			new File(qoltingDirectory, "onyx.wav"),
+			new File(qoltingDirectory, "prayer.wav"),
+			new File(qoltingDirectory, "health.wav"),
+			new File(qoltingDirectory, "regularDrop.wav")
 	};
 	public final Clip[] clips = {
 			null,
