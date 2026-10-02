@@ -203,7 +203,7 @@ public class QoltingAccountManagerFrame {
             }
             if(info.items.size() > 0) {
                 for(LootItem item : info.items) {
-                    int value = item.value * item.quantity;
+                    long value = item.value * item.quantity;
                     if(value < nearbyThreshold) {
                         continue;
                     }

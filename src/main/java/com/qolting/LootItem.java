@@ -2,7 +2,7 @@ package com.qolting;
 
 public class LootItem {
     public String name;
-    public int value;
+    public long value;
     public int quantity;
 
     public LootItem(String name, int value, int quantity) {

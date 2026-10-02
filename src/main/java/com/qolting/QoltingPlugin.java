@@ -250,7 +250,7 @@ public class QoltingPlugin extends Plugin
 	public String getItemName(int id) {
 		return client.getItemDefinition(id).getName();
 	}
-	public int getItemPrice(int id) {
+	public long getItemPrice(int id) {
 		return itemManager.getItemPrice(id);
 	}
 
