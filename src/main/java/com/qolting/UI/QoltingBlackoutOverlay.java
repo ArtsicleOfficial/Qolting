@@ -19,10 +19,21 @@ public class QoltingBlackoutOverlay extends Overlay {
     public int padding;
     public Color color;
 
-    public ArrayList<BlackoutQuad> quads = new ArrayList<>();
+    public boolean belowWidgetsWas = false;
 
+    public void updateBelowWidgets(boolean below) {
+        if(below) {
+            setLayer(OverlayLayer.UNDER_WIDGETS);
+        } else {
+            setLayer(OverlayLayer.ABOVE_WIDGETS);
+        }
+        belowWidgetsWas = below;
+    }
+    public ArrayList<BlackoutQuad> quads = new ArrayList<>();
+    public QoltingPlugin plugin;
     public QoltingBlackoutOverlay(QoltingPlugin plugin, int gameWidth, int gameHeight, int padding, Color color) {
         super(plugin);
+        this.plugin = plugin;
 
         this.gameHeight = gameHeight;
         this.gameWidth = gameWidth;
@@ -33,7 +44,9 @@ public class QoltingBlackoutOverlay extends Overlay {
         setDragTargetable(false);
         setBounds(new Rectangle(0,0,gameWidth,gameHeight));
         setPriority(OverlayPriority.HIGHEST);
-        setLayer(OverlayLayer.ABOVE_WIDGETS);
+        updateBelowWidgets(plugin.config.drawBelowWidgets());
+
+
     }
 
     public void addQuad(Polygon gon) {

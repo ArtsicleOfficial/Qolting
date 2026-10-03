@@ -10,49 +10,49 @@ public interface QoltingConfig extends Config
 {
 	@ConfigSection(
 				name = "General",
-				description = "Everything general",
+				description = "",
 				position = -1
 	)
 	String general = "general";
 
 	@ConfigSection(
 				name = "Altar",
-				description = "Related to the Altar",
+				description = "",
 				position = 1
 	)
 	String altar = "altar";
 
 	@ConfigSection(
 			name = "Blackout",
-			description = "Related to the Blackout Overlay",
+			description = "",
 			position = 0
 	)
 	String blackout = "blackout";
 
 	@ConfigSection(
 				name = "Screen Blasters",
-				description = "you're gonna have to figure out what that one means ;)",
+				description = "",
 				position = 2
 	)
 	String screenBlasters = "screenBlasters";
 
 	@ConfigSection(
 				name = "Ear Blasters",
-				description = "Blasts your ears with pertinent info",
+				description = "",
 				position = 3
 	)
 	String earBlasters = "earBlasters";
 
 	@ConfigSection(
 				name = "Nearby Drops",
-				description = "Nearby drops pointer-outer",
+				description = "",
 				position = 3
 	)
 	String nearbyDrops = "nearbyDrops";
 
 	@ConfigSection(
-				name = "Tracker",
-				description = "Tracks all accounts using the plugin at once",
+				name = "Track accounts",
+				description = "",
 				position = 4
 	)
 	String tracker = "tracker";
@@ -60,11 +60,32 @@ public interface QoltingConfig extends Config
 	@ConfigItem(
 			keyName = "rsnDisplay",
 			name = "RSN Display",
-			description = "Whether or not to display the account's RSN",
+			description = "",
 			section = general
 	)
 	default boolean rsnDisplay() {
 		return true;
+	}
+
+
+	@ConfigItem(
+			keyName = "requireBoostedStrengthToBlackout",
+			name = "Require boosted strength",
+			description = "Default +0 means requires no boost. +1 would wait until your potion runs out completely.",
+			section = blackout
+	)
+	default int requireBoostedStrengthToBlackout() {
+		return 0;
+	}
+
+	@ConfigItem(
+			keyName = "drawBelowWidgets",
+			name = "Draw below widgets",
+			description = "",
+			section = blackout
+	)
+	default boolean drawBelowWidgets() {
+		return false;
 	}
 
 	@ConfigItem(
@@ -76,9 +97,27 @@ public interface QoltingConfig extends Config
 	default boolean onlyInDarkmeyer() { return true; }
 
 	@ConfigItem(
+			keyName = "countAlchs",
+			name = "Count alchs",
+			description = "Counts items in inventory when the name includes this. Comma separated items. Blank means no counting. This example highlights all rune items, all grimy herbs, and the other specific items: gold ring, adamant dagger, rune, grimy",
+			section = general
+	)
+	default String countAlchs() { return ""; }
+
+	@ConfigItem(
+			keyName="prayerTime",
+			name = "Prayer time",
+			description = "",
+			section = general
+	)
+	default boolean prayerTime() { return false; }
+
+
+
+	@ConfigItem(
 			keyName = "blackoutOverlay",
 			name = "Blackout Overlay",
-			description = "Whether or not to display the blackout overlay",
+			description = "",
 			section = blackout
 	)
 	default boolean blackoutOverlay() {

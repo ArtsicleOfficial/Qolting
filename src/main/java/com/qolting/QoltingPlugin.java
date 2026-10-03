@@ -15,6 +15,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.events.*;
 import net.runelite.api.kit.KitType;
+import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -40,13 +41,13 @@ import java.util.ArrayList;
 public class QoltingPlugin extends Plugin
 {
 	@Inject
-	private Client client;
+	public Client client;
 	@Inject
-	private QoltingConfig config;
+	public QoltingConfig config;
 	@Inject
 	private OverlayManager overlayManager;
 	@Inject
-	private ItemManager itemManager;
+	public ItemManager itemManager;
 	@Inject
 	private ConfigManager configManager;
 
@@ -65,7 +66,9 @@ public class QoltingPlugin extends Plugin
 	private QoltingShoutOverlay qoltingShoutPanel = null;
 	private QoltingNearbyPanel qoltingNearbyPanel = null;
 	private QoltingSlotsLeftOverlay qoltingSlotsLeftOverlay = null;
+	private QoltingAlchsOverlay qoltingAlchsOverlay = null;
 	private QoltingBlackoutOverlay qoltingBlackoutOverlay = null;
+	private QoltingPrayerTimeOverlay qoltingPrayerTimeOverlay = null;
 
 	private Item[] lastPlayerInventory = null;
 
@@ -144,7 +147,7 @@ public class QoltingPlugin extends Plugin
 		overlayManager.add(qoltingProfitPanel);
 	}
 	private void updateShout() {
-		boolean[] thingsToBeFussedAbout = new boolean[]{false,false,false};
+		boolean[] thingsToBeFussedAbout = new boolean[]{false,false,false,false};
 		boolean any = false;
 		if(config.tooAFKIndicator() && tooAFK()) {
 			thingsToBeFussedAbout[QoltingShoutOverlay.TOO_AFK] = true;
@@ -156,6 +159,15 @@ public class QoltingPlugin extends Plugin
 		}
 		if(config.goBank() && inventoryFull()) {
 			thingsToBeFussedAbout[QoltingShoutOverlay.GO_BANK] = true;
+			any = true;
+		}
+		if(config.goBank() && inventoryFull()) {
+			thingsToBeFussedAbout[QoltingShoutOverlay.GO_BANK] = true;
+			any = true;
+		}
+		int boost = client.getBoostedSkillLevel(Skill.STRENGTH) - client.getRealSkillLevel(Skill.STRENGTH);
+		if(boost < config.requireBoostedStrengthToBlackout()) {
+			thingsToBeFussedAbout[QoltingShoutOverlay.DRINK_STRENGTH] = true;
 			any = true;
 		}
 		qoltingShoutPanel.thingsToBeFussedAbout = thingsToBeFussedAbout;
@@ -187,15 +199,19 @@ public class QoltingPlugin extends Plugin
 			overlayManager.remove(qoltingBlackoutOverlay);
 			return;
 		}
+		boolean belowWidgets = config.drawBelowWidgets();
+		if(belowWidgets != qoltingBlackoutOverlay.belowWidgetsWas) {
+			overlayManager.remove(qoltingBlackoutOverlay);
+			qoltingBlackoutOverlay.updateBelowWidgets(belowWidgets);
+			overlayManager.add(qoltingBlackoutOverlay);
+		}
 		overlayManager.add(qoltingBlackoutOverlay);
+
 
 		qoltingBlackoutOverlay.gameHeight = client.getViewportHeight();
 		qoltingBlackoutOverlay.gameWidth = client.getViewportWidth();
 
 		qoltingBlackoutOverlay.quads.clear();
-
-		Polygon altarDoor = Perspective.getCanvasTilePoly(client,LocalPoint.fromWorld(client,3605,3358));
-		Polygon bankDoor = Perspective.getCanvasTilePoly(client,LocalPoint.fromWorld(client,3605,3365));
 
 		//Is in bank or altar, remove overlay entirely
 		if( client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3365, 8, 5,0))
@@ -206,8 +222,12 @@ public class QoltingPlugin extends Plugin
 			return;
 		}
 
-		//Otherwise, let's selectively remove the overlay on certain things:
+		int boost = client.getBoostedSkillLevel(Skill.STRENGTH) - client.getRealSkillLevel(Skill.STRENGTH);
+		if(boost < config.requireBoostedStrengthToBlackout()) {
+			qoltingBlackoutOverlay.quads.add(new BlackoutQuad(0,0,client.getViewportWidth(),client.getViewportHeight()));
+		}
 
+		//Otherwise, let's selectively remove the overlay on certain things:
 		for(GroundItem item : nearbyItems) {
 			if(item.quantity * itemManager.getItemPrice(item.id) < config.nearbyThreshold() || ignoreItem(item.id)) {
 				continue;
@@ -225,9 +245,13 @@ public class QoltingPlugin extends Plugin
 			qoltingBlackoutOverlay.addQuad(altar);
 		}
 		//Altar door
-		if((client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold() || client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3353, 8, 6,0)) || (config.blackoutGlobalDisplayAltar() && isAnyAccountLowPrayer()))
-			&& isDoorClosed(3605,3358)) {
-			qoltingBlackoutOverlay.addQuad(altarDoor);
+		LocalPoint altarPoint = LocalPoint.fromWorld(client,3605,3358);
+		if(altarPoint != null) {
+			Polygon altarDoor = Perspective.getCanvasTilePoly(client, altarPoint);
+			if ((client.getBoostedSkillLevel(Skill.PRAYER) <= config.altarThreshold() || client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3353, 8, 6, 0)) || (config.blackoutGlobalDisplayAltar() && isAnyAccountLowPrayer()))
+					&& isDoorClosed(3605, 3358)) {
+				qoltingBlackoutOverlay.addQuad(altarDoor);
+			}
 		}
 		//Bank
 		if(getSlotsLeft() <= 2) {
@@ -235,10 +259,15 @@ public class QoltingPlugin extends Plugin
 			qoltingBlackoutOverlay.addQuad(bank);
 		}
 		//Bank door
-		if((getSlotsLeft() <= 2 || client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3365, 8, 5,0)))
-				&& isDoorClosed(3605,3365)) {
-			qoltingBlackoutOverlay.addQuad(bankDoor);
+		LocalPoint bankPoint = LocalPoint.fromWorld(client,3605,3365);
+		if(bankPoint != null) {
+			Polygon bankDoor = Perspective.getCanvasTilePoly(client, bankPoint);
+			if ((getSlotsLeft() <= 2 || client.getLocalPlayer().getWorldLocation().isInArea2D(new WorldArea(3601, 3365, 8, 5, 0)))
+					&& isDoorClosed(3605, 3365)) {
+				qoltingBlackoutOverlay.addQuad(bankDoor);
+			}
 		}
+
 
 	}
 
@@ -250,7 +279,7 @@ public class QoltingPlugin extends Plugin
 	public String getItemName(int id) {
 		return client.getItemDefinition(id).getName();
 	}
-	public int getItemPrice(int id) {
+	public long getItemPrice(int id) {
 		return itemManager.getItemPrice(id);
 	}
 
@@ -381,6 +410,7 @@ public class QoltingPlugin extends Plugin
 		overlayManager.remove(qoltingShoutPanel);
 		overlayManager.remove(qoltingNearbyPanel);
 		overlayManager.remove(qoltingSlotsLeftOverlay);
+		overlayManager.remove(qoltingAlchsOverlay);
 		overlayManager.remove(qoltingBlackoutOverlay);
 	}
 
@@ -395,7 +425,9 @@ public class QoltingPlugin extends Plugin
 		qoltingShoutPanel = new QoltingShoutOverlay(this,client.getViewportWidth(),client.getViewportHeight());
 		qoltingNearbyPanel = new QoltingNearbyPanel(this);
 		qoltingSlotsLeftOverlay = new QoltingSlotsLeftOverlay(this);
+		qoltingAlchsOverlay = new QoltingAlchsOverlay(this);
 		qoltingBlackoutOverlay = new QoltingBlackoutOverlay(this,client.getViewportWidth(),client.getViewportHeight(),config.blackoutPadding(),config.blackoutColor());
+		qoltingPrayerTimeOverlay = new QoltingPrayerTimeOverlay(this);
 
 		updateConfig();
 
@@ -485,7 +517,12 @@ public class QoltingPlugin extends Plugin
 	}
 
 	private Item[] getInventoryList(ItemContainerChanged changed) {
-		return ArrayUtils.addAll(changed.getItemContainer().getItems(),client.getItemContainer(InventoryID.EQUIPMENT).getItems());
+		Item[] invent = {};
+		ItemContainer c = client.getItemContainer(InventoryID.EQUIPMENT);
+		if(c != null) {
+			invent = client.getItemContainer(InventoryID.EQUIPMENT).getItems();
+		}
+		return ArrayUtils.addAll(changed.getItemContainer().getItems(),invent);
 	}
 
 	@Subscribe
@@ -732,6 +769,38 @@ public class QoltingPlugin extends Plugin
 		updateNearby();
 		updateSlotsLeft();
 		updateBlackout();
+
+		String alchCounter = config.countAlchs().trim().toLowerCase();
+		String[] alchItems = {};
+		if(alchCounter.length() > 0) {
+			overlayManager.add(qoltingAlchsOverlay);
+			alchItems = alchCounter.split(",");
+			int count = 0;
+			ItemContainer invent = client.getItemContainer(InventoryID.INVENTORY);
+			if(invent != null) {
+				for (Item i : invent.getItems()) {
+					if (i != null && i.getQuantity() > 0) {
+						boolean nameCounted = false;
+						for(String test : alchItems) {
+							String name = itemManager.getItemComposition(i.getId()).getMembersName();
+							if(name.toLowerCase().contains(test.trim())) {
+								count += i.getQuantity();
+							}
+						}
+					}
+				}
+			}
+			qoltingAlchsOverlay.count = count;
+		} else {
+			overlayManager.remove(qoltingAlchsOverlay);
+		}
+
+
+		if(config.prayerTime()) {
+			overlayManager.add(qoltingPrayerTimeOverlay);
+		} else {
+			overlayManager.remove(qoltingPrayerTimeOverlay);
+		}
 
 		takingItem = Math.max(0,takingItem-1);
 		ownLootTimer = Math.max(0,ownLootTimer-1);

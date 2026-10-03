@@ -18,6 +18,7 @@ public class QoltingShoutOverlay extends Overlay {
     public static final int TOO_AFK = 0;
     public static final int SHARD_NEARBY = 1;
     public static final int GO_BANK = 2;
+    public static final int DRINK_STRENGTH = 3;
 
     private int blinker = 0;
 
@@ -26,7 +27,7 @@ public class QoltingShoutOverlay extends Overlay {
     public int viewportWidth;
     public int viewportHeight;
 
-    public boolean[] thingsToBeFussedAbout = new boolean[3];
+    public boolean[] thingsToBeFussedAbout = new boolean[4];
 
     public BufferedImage shard;
 
@@ -73,6 +74,10 @@ public class QoltingShoutOverlay extends Overlay {
         if(thingsToBeFussedAbout[QoltingShoutOverlay.TOO_AFK]) {
             graphics.setColor(Color.BLACK);
             graphics.drawString("TOO AFK (Auto-Retaliate OR Vyre Outfit)",x + w/2 - metrics.stringWidth("TOO AFK (Auto-Retaliate OR Vyre Outfit)")/2, y + h - 5);
+        }
+        if(thingsToBeFussedAbout[QoltingShoutOverlay.DRINK_STRENGTH]) {
+            graphics.setColor(Color.BLACK);
+            graphics.drawString("DRINK STRENGTH POTION",x + w/2 - metrics.stringWidth("DRINK STRENGTH POTION")/2, y + h/4 - 5);
         }
         /*graphics.setFont(new Font(graphics.getFont().getFontName(),Font.PLAIN,80));
         metrics = graphics.getFontMetrics();*/
